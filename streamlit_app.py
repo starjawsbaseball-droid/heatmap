@@ -352,10 +352,11 @@ tab_batter, tab_pitcher, tab_data = st.tabs(
 
 with tab_batter:
     batter_options = sorted(filtered["打者名"].dropna().unique().tolist())
+    default_batters = [name for name in batter_options if str(name).startswith("SJ")]
     selected_batters = st.multiselect(
         "表示する打者（複数選択可）",
         batter_options,
-        default=batter_options,
+        default=default_batters,
         key="batters",
     )
     batter_cols = st.slider(
@@ -386,10 +387,11 @@ with tab_batter:
 
 with tab_pitcher:
     pitcher_options = sorted(filtered["投手名"].dropna().unique().tolist())
+    default_pitchers = [name for name in pitcher_options if str(name).startswith("SJ")]
     selected_pitchers = st.multiselect(
         "表示する投手（複数選択可）",
         pitcher_options,
-        default=pitcher_options,
+        default=default_pitchers,
         key="pitchers",
     )
     pitcher_cols = st.slider(
