@@ -452,12 +452,30 @@ if filtered.empty:
     st.stop()
 
 # 統計
-overall, total_ab, total_h, total_k = stats(filtered)
+# 上部の全体情報は、全メンバーではなくSJメンバーを基準に集計する。
+# SJ打者：SJで始まる打者の全体打率
+# SJ投手：SJで始まる投手の全体被打率
+sj_batter = filtered[filtered["打者名"].astype(str).str.startswith("SJ")].copy()
+sj_pitcher = filtered[filtered["投手名"].astype(str).str.startswith("SJ")].copy()
+
+sj_batter_avg, sj_batter_ab, sj_batter_h, sj_batter_k = stats(sj_batter)
+sj_pitcher_avg, sj_pitcher_ab, sj_pitcher_h, sj_pitcher_k = stats(sj_pitcher)
+
+st.markdown("### SJメンバー全体情報")
+
+st.markdown("**SJ打者（全体）**")
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("分析件数", f"{len(filtered):,}")
-m2.metric("AB", f"{total_ab:,}")
-m3.metric("安打", f"{total_h:,}")
-m4.metric("打率 / 被打率", "-" if np.isnan(overall) else f"{overall:.3f}")
+m1.metric("分析件数", f"{len(sj_batter):,}")
+m2.metric("AB", f"{sj_batter_ab:,}")
+m3.metric("安打", f"{sj_batter_h:,}")
+m4.metric("全体打率", "-" if np.isnan(sj_batter_avg) else f"{sj_batter_avg:.3f}")
+
+st.markdown("**SJ投手（全体被打率）**")
+p1, p2, p3, p4 = st.columns(4)
+p1.metric("分析件数", f"{len(sj_pitcher):,}")
+p2.metric("AB", f"{sj_pitcher_ab:,}")
+p3.metric("被安打", f"{sj_pitcher_h:,}")
+p4.metric("全体被打率", "-" if np.isnan(sj_pitcher_avg) else f"{sj_pitcher_avg:.3f}")
 
 st.markdown(
     f"**条件:** カテゴリ = {'、'.join(selected_categories)} / "
