@@ -600,95 +600,209 @@ K: {player_data['strikeouts']}
 
 def make_report_pdf(filtered, selected_categories, selected_opponents, start_date, end_date,
                     sj_batter, sj_pitcher, selected_batters, selected_pitchers, analysis_results):
-    """現在の画面条件・成績・ヒートマップ・AI分析を1つのPDFレポートにまとめる。"""
+    """現在の分析条件・全体成績・選手別ヒートマップ・AI分析を読みやすいPDFにまとめる。"""
     pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
         rightMargin=14*mm, leftMargin=14*mm,
-        topMargin=14*mm, bottomMargin=14*mm,
+        topMargin=13*mm, bottomMargin=13*mm,
         title="野球ゾーン別 打率・被打率分析レポート",
         author="Streamlit Baseball Heatmap"
     )
+
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         "JPTitle", parent=styles["Title"], fontName="HeiseiKakuGo-W5",
-        fontSize=20, leading=26, alignment=TA_CENTER, spaceAfter=10*mm
+        fontSize=20, leading=26, alignment=TA_CENTER,
+        spaceAfter=8*mm
     )
-    h1 = ParagraphStyle("JPH1", parent=styles["Heading1"], fontName="HeiseiKakuGo-W5", fontSize=14, leading=19, spaceBefore=5*mm, spaceAfter=3*mm)
-    h2 = ParagraphStyle("JPH2", parent=styles["Heading2"], fontName="HeiseiKakuGo-W5", fontSize=11, leading=15, spaceBefore=3*mm, spaceAfter=2*mm)
-    body = ParagraphStyle("JPBody", parent=styles["BodyText"], fontName="HeiseiKakuGo-W5", fontSize=9, leading=14, spaceAfter=2*mm)
-    small = ParagraphStyle("JPSmall", parent=body, fontSize=8, leading=12)
+    h1 = ParagraphStyle(
+        "JPH1", parent=styles["Heading1"], fontName="HeiseiKakuGo-W5",
+        fontSize=14, leading=19, spaceBefore=3*mm, spaceAfter=3*mm
+    )
+    player_style = ParagraphStyle(
+        "JPPlayer", parent=styles["Heading2"], fontName="HeiseiKakuGo-W5",
+        fontSize=14, leading=19, spaceAfter=3*mm
+    )
+    body = ParagraphStyle(
+        "JPBody", parent=styles["BodyText"], fontName="HeiseiKakuGo-W5",
+        fontSize=9, leading=14, spaceAfter=2*mm
+    )
+    small = ParagraphStyle(
+        "JPSmall", parent=body, fontSize=8, leading=12
+    )
+    ai_style = ParagraphStyle(
+        "JPAI", parent=body, fontSize=8.5, leading=13,
+        spaceAfter=2*mm
+    )
 
     def esc(v):
         return str(v).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+    def make_heatmap_image(g, name, metric):
+        fig = make_heatmap(g, name, metric)
+        img_buf = io.BytesIO()
+        fig.savefig(img_buf, format="png", dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        img_buf.seek(0)
+        # 1人分を1ページ内に収め、名前と画像が分離しないサイズにする。
+        return Image(img_buf, width=104*mm, height=104*mm)
+
     story = [Paragraph("野球ゾーン別 打率・被打率分析レポート", title_style)]
-    story.append(Paragraph("分析条件", h1))
-    story.append(Paragraph(
-        f"カテゴリ：{esc('、'.join(selected_categories))}<br/>"
-        f"対戦相手：{esc('、'.join(selected_opponents))}<br/>"
-        f"期間：{esc(start_date)} ～ {esc(end_date)}<br/>"
-        f"分析対象：{len(filtered):,}件", body
-    ))
+
+    # ------------------------------------------------------------
+    # 1ページ目：レポート概要
+    # ------------------------------------------------------------
+    story.append(Paragraph("1. 分析概要", h1))
+    condition_data = [
+        ["項目", "内容"],
+        ["カテゴリ", esc("、".join(selected_categories))],
+        ["対戦相手", esc("、".join(selected_opponents))],
+        ["期間", esc(f"{start_date} ～ {end_date}")],
+        ["分析対象", f"{len(filtered):,}件"],
+    ]
+    ct = Table(condition_data, colWidths=[32*mm, 130*mm])
+    ct.setStyle(TableStyle([
+        ("FONTNAME", (0,0), (-1,-1), "HeiseiKakuGo-W5"),
+        ("FONTSIZE", (0,0), (-1,-1), 8.5),
+        ("BACKGROUND", (0,0), (0,-1), colors.lightgrey),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("TOPPADDING", (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+    ]))
+    story.append(ct)
+    story.append(Spacer(1, 5*mm))
 
     ba, bab, bh, bk = stats(sj_batter)
     pa, pab, ph, pk = stats(sj_pitcher)
-    data = [
+    summary_data = [
         ["区分", "分析件数", "AB", "安打", "K", "全体成績"],
         ["SJ打者", f"{len(sj_batter):,}", f"{bab:,}", f"{bh:,}", f"{bk:,}", "-" if np.isnan(ba) else f"{ba:.3f}"],
         ["SJ投手", f"{len(sj_pitcher):,}", f"{pab:,}", f"{ph:,}", f"{pk:,}", "-" if np.isnan(pa) else f"{pa:.3f}"],
     ]
-    t = Table(data, colWidths=[30*mm, 25*mm, 20*mm, 20*mm, 20*mm, 30*mm])
-    t.setStyle(TableStyle([
+    stbl = Table(summary_data, colWidths=[30*mm, 25*mm, 20*mm, 20*mm, 20*mm, 30*mm])
+    stbl.setStyle(TableStyle([
         ("FONTNAME", (0,0), (-1,-1), "HeiseiKakuGo-W5"),
         ("FONTSIZE", (0,0), (-1,-1), 8),
         ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
         ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
         ("ALIGN", (1,0), (-1,-1), "CENTER"),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ("TOPPADDING", (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
     ]))
-    story += [Paragraph("SJメンバー全体情報", h1), t]
+    story.append(Paragraph("SJメンバー全体情報", h1))
+    story.append(stbl)
 
-    # 選手別ヒートマップ
-    for role, names, metric in [
-        ("batter", selected_batters, "打率"),
-        ("pitcher", selected_pitchers, "被打率"),
-    ]:
-        if not names:
-            continue
-        story.append(PageBreak())
-        story.append(Paragraph("打者別 打率" if role == "batter" else "投手別 被打率", h1))
+    # ------------------------------------------------------------
+    # 選手別ヒートマップ：画面表示と同じく「1行3選手」のカード型
+    # ------------------------------------------------------------
+    player_sections = [
+        ("batter", selected_batters, "打者別 打率", "打率", "安打"),
+        ("pitcher", selected_pitchers, "投手別 被打率", "被打率", "被安打"),
+    ]
+
+    player_index = 0
+    for role, names, section_title, metric, hit_label in player_sections:
+        valid_names = []
         for name in names:
             g = filtered[filtered["打者名"] == name] if role == "batter" else filtered[filtered["投手名"] == name]
-            if g.empty:
-                continue
+            if not g.empty:
+                valid_names.append((name, g))
+
+        if not valid_names:
+            continue
+
+        story.append(PageBreak())
+        story.append(Paragraph(section_title, h1))
+        story.append(Paragraph("画面表示と同じく、1行3選手で表示しています。", small))
+        story.append(Spacer(1, 2*mm))
+
+        # 1行3選手。各カードを1セルにまとめることで、
+        # 「名前だけ前ページ→次ページにヒートマップ」という分離を防止。
+        card_width = 55*mm
+        cards = []
+        for name, g in valid_names:
+            player_index += 1
             avg, ab, h, k = stats(g)
-            story.append(Paragraph(f"{esc(name)}　{metric}：{'-' if np.isnan(avg) else f'{avg:.3f}'}　AB={ab}　{'安打' if role == 'batter' else '被安打'}={h}　K={k}", h2))
+            avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
+
             fig = make_heatmap(g, name, metric)
             img_buf = io.BytesIO()
             fig.savefig(img_buf, format="png", dpi=150, bbox_inches="tight")
             plt.close(fig)
             img_buf.seek(0)
-            story.append(Image(img_buf, width=125*mm, height=125*mm))
-            story.append(Spacer(1, 2*mm))
 
+            # カード内に「名前・成績・ヒートマップ」をまとめて配置
+            card = [
+                Paragraph(f"<b>{player_index}. {esc(name)}</b>", ParagraphStyle(
+                    f"CardTitle{player_index}", parent=body, fontName="HeiseiKakuGo-W5",
+                    fontSize=9.5, leading=12, alignment=TA_CENTER, spaceAfter=1.5*mm
+                )),
+                Paragraph(
+                    f"{metric} <b>{avg_text}</b>　AB {ab:,}　{hit_label} {h:,}　K {k:,}",
+                    ParagraphStyle(
+                        f"CardStats{player_index}", parent=small, fontName="HeiseiKakuGo-W5",
+                        fontSize=6.8, leading=9, alignment=TA_CENTER, spaceAfter=1.5*mm
+                    )
+                ),
+                Image(img_buf, width=53*mm, height=53*mm),
+            ]
+            cards.append(card)
+
+        # 3列ずつに分割
+        for row_start in range(0, len(cards), 3):
+            row_cards = cards[row_start:row_start + 3]
+            while len(row_cards) < 3:
+                row_cards.append([])
+
+            table_data = [[row_cards[0], row_cards[1], row_cards[2]]]
+            grid = Table(table_data, colWidths=[card_width, card_width, card_width],
+                         hAlign="CENTER", splitByRow=0)
+            grid.setStyle(TableStyle([
+                ("BOX", (0,0), (-1,-1), 0.7, colors.grey),
+                ("INNERGRID", (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("ALIGN", (0,0), (-1,-1), "CENTER"),
+                ("LEFTPADDING", (0,0), (-1,-1), 1.5*mm),
+                ("RIGHTPADDING", (0,0), (-1,-1), 1.5*mm),
+                ("TOPPADDING", (0,0), (-1,-1), 2*mm),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 2*mm),
+                ("BACKGROUND", (0,0), (-1,-1), colors.whitesmoke),
+            ]))
+            story.append(grid)
+            story.append(Spacer(1, 5*mm))
+
+    # ------------------------------------------------------------
+    # AI分析：選手単位で見出しと本文をまとめる
+    # ------------------------------------------------------------
     if analysis_results:
         story.append(PageBreak())
         story.append(Paragraph("選手別AI分析", h1))
-        for result in analysis_results:
+        for i, result in enumerate(analysis_results, 1):
             role_label = "打者" if result["role"] == "batter" else "投手"
-            story.append(Paragraph(f"{esc(result['player'])}（{role_label}）　分析方式：{esc(result['source'])}", h2))
-            # Markdown記号をPDF向けに軽く除去
-            txt = str(result["text"]).replace("**", "").replace("\n", "<br/>")
-            story.append(Paragraph(esc(txt).replace("&lt;br/&gt;", "<br/>"), body))
+            story.append(Paragraph(
+                f"{i}. {esc(result['player'])}（{role_label}）　分析方式：{esc(result['source'])}",
+                player_style
+            ))
+            txt = str(result["text"])
+            # AI本文は段落単位にして、長文でも自然にページをまたげるようにする。
+            paragraphs = [x.strip() for x in txt.split("\n") if x.strip()]
+            for part in paragraphs:
+                clean = part.replace("**", "").replace("###", "").replace("##", "").replace("#", "")
+                story.append(Paragraph(esc(clean), ai_style))
+            story.append(Spacer(1, 4*mm))
 
     story.append(Spacer(1, 4*mm))
-    story.append(Paragraph("注記：AB=0（B・DB・SF・SAC）のゾーンはデータなしとして白表示。BHは安打、BOはAB、BKはABかつ三振として計算。", small))
+    story.append(Paragraph(
+        "注記：AB=0（B・DB・SF・SAC）のゾーンはデータなしとして白表示。"
+        "BHは安打、BOはAB、BKはABかつ三振として計算。",
+        small
+    ))
     doc.build(story)
     return buf.getvalue()
-
 
 # ============================================================
 # Streamlit UI
