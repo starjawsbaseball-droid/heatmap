@@ -13,6 +13,63 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+
+try:
+    import anthropic
+except ImportError:
+    anthropic = None
+from matplotlib import font_manager
+
+# Streamlit Cloud（Linux）でもヒートマップ画像内の日本語を確実に描画するため、
+# アプリに同梱した Noto Sans CJK JP をMatplotlibへ直接登録する。
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+FONT_REGULAR = FONT_DIR / "NotoSansCJK-Regular.ttc"
+FONT_BOLD = FONT_DIR / "NotoSansCJK-Bold.ttc"
+
+if FONT_REGULAR.exists():
+    font_manager.fontManager.addfont(str(FONT_REGULAR))
+if FONT_BOLD.exists():
+    font_manager.fontManager.addfont(str(FONT_BOLD))
+
+try:
+    if FONT_REGULAR.exists():
+        _jp_font = font_manager.FontProperties(fname=str(FONT_REGULAR))
+        _jp_font_name = _jp_font.get_name()
+        plt.rcParams["font.family"] = _jp_font_name
+        plt.rcParams["font.sans-serif"] = [_jp_font_name]
+    else:
+        import japanize_matplotlib  # noqa: F401
+except Exception:
+    try:
+        import japanize_matplotlib  # noqa: F401
+    except Exception:
+        pass
+
+plt.rcParams["axes.unicode_minus"] = False
+
+
+# ============================================================
+# 埋め込みCSVデータ（ヒートマップ.csv）
+# ============================================================# -*- coding: utf-8 -*-
+"""Streamlit版 野球ゾーン別 打率・被打率ヒートマップ
+
+CSVはアプリ内に埋め込まれているため、ファイルアップロードは不要です。
+元の完成版 zone_heatmap_generator(1).py の集計ロジックをStreamlit向けに移植しています。
+"""
+
+import io
+import re
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+import matplotlib.pyplot as plt
+
+try:
+    import anthropic
+except ImportError:
+    anthropic = None
 from matplotlib import font_manager
 
 # Streamlit Cloud（Linux）でもヒートマップ画像内の日本語を確実に描画するため、
@@ -375,6 +432,111 @@ def make_heatmap(g, title, rate_label):
 
 
 # ============================================================
+# 選手別AI分析
+# ============================================================
+def zone_summary(g):
+    z = (
+        g.groupby(["y_zone", "x_zone"], observed=True)[["AB", "H", "K"]]
+        .sum()
+        .reset_index()
+    )
+    rows = []
+    for _, r in z.iterrows():
+        ab = int(r["AB"])
+        h = int(r["H"])
+        k = int(r["K"])
+        rate = h / ab if ab else np.nan
+        rows.append({"zone": f"x={int(r['x_zone'])+1}, y={int(r['y_zone'])+1}", "ab": ab, "h": h, "k": k, "rate": rate})
+    return rows
+
+
+def build_player_analysis(player, g, role):
+    avg, ab, h, k = stats(g)
+    zones = zone_summary(g)
+    valid = [z for z in zones if z["ab"] > 0]
+    best = sorted(valid, key=lambda z: z["rate"], reverse=True)[:3]
+    worst = sorted(valid, key=lambda z: z["rate"])[:3]
+    kzones = sorted(valid, key=lambda z: z["k"], reverse=True)[:3]
+    zone_lines = [
+        f"{z['zone']}: 打率/被打率={z['rate']:.3f}, AB={z['ab']}, 安打={z['h']}, K={z['k']}"
+        for z in zones
+    ]
+    return {
+        "player": player,
+        "role": role,
+        "rate": None if np.isnan(avg) else round(float(avg), 3),
+        "ab": ab,
+        "hits": h,
+        "strikeouts": k,
+        "zones": zone_lines,
+        "best_zones": [z["zone"] for z in best],
+        "worst_zones": [z["zone"] for z in worst],
+        "k_zones": [z["zone"] for z in kzones],
+    }
+
+
+def free_solver_analysis(player_data):
+    """APIキーなしで動く無料・ローカル分析。外部サービスへデータを送信しない。"""
+    p = player_data
+    rate_text = "データ不足" if p["rate"] is None else f"{p['rate']:.3f}"
+    role_text = "打者" if p["role"] == "batter" else "投手"
+    if p["role"] == "batter":
+        return (
+            f"**{p['player']}（{role_text}）**\n\n"
+            f"- 全体打率: **{rate_text}**（AB={p['ab']}、安打={p['hits']}、K={p['strikeouts']}）\n"
+            f"- 打率が高かったゾーン: {', '.join(p['best_zones']) or 'データなし'}\n"
+            f"- 打率が低かったゾーン: {', '.join(p['worst_zones']) or 'データなし'}\n"
+            f"- 三振が多かったゾーン: {', '.join(p['k_zones']) or 'データなし'}\n\n"
+            "※APIキー未指定のため、外部AIではなく、ゾーン別の実績値だけを用いた無料のローカル分析です。"
+        )
+    return (
+        f"**{p['player']}（{role_text}）**\n\n"
+        f"- 全体被打率: **{rate_text}**（AB={p['ab']}、被安打={p['hits']}、K={p['strikeouts']}）\n"
+        f"- 被打率が高かったゾーン: {', '.join(p['best_zones']) or 'データなし'}\n"
+        f"- 被打率が低かったゾーン: {', '.join(p['worst_zones']) or 'データなし'}\n"
+        f"- 三振が多かったゾーン: {', '.join(p['k_zones']) or 'データなし'}\n\n"
+        "※APIキー未指定のため、外部AIではなく、ゾーン別の実績値だけを用いた無料のローカル分析です。"
+    )
+
+
+def claude_analysis(player_data, api_key, model):
+    if anthropic is None:
+        raise RuntimeError("anthropicパッケージがインストールされていません。")
+    client = anthropic.Anthropic(api_key=api_key)
+    role_text = "打者" if player_data["role"] == "batter" else "投手"
+    metric_text = "打率" if player_data["role"] == "batter" else "被打率"
+    prompt = f"""
+あなたは野球データ分析担当です。以下の{role_text}について、与えられた実績データだけを根拠に簡潔に分析してください。
+推測で存在しないデータを補わないでください。特にサンプル数（AB）が少ないゾーンは「サンプル数が少ない」と明記してください。
+
+選手: {player_data['player']}
+全体{metric_text}: {player_data['rate']}
+AB: {player_data['ab']}
+安打: {player_data['hits']}
+K: {player_data['strikeouts']}
+
+ゾーン別データ:
+{chr(10).join(player_data['zones'])}
+
+以下の順番で、日本語で300～500文字程度でまとめてください。
+1. 全体評価
+2. 得意/苦手または抑えられている/打たれているゾーン
+3. 三振傾向
+4. 次回確認すべきポイント
+"""
+    message = client.messages.create(
+        model=model,
+        max_tokens=700,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    parts = []
+    for block in message.content:
+        if getattr(block, "type", None) == "text":
+            parts.append(block.text)
+    return "\n".join(parts).strip()
+
+
+# ============================================================
 # Streamlit UI
 # ============================================================
 st.set_page_config(
@@ -393,6 +555,20 @@ except Exception as e:
 
 # サイドバー
 st.sidebar.header("分析条件")
+
+# Claude API設定
+st.sidebar.markdown("### AI分析")
+anthropic_api_key = st.sidebar.text_input(
+    "Anthropic Claude API Key",
+    type="password",
+    help="Claudeで選手別の文章分析を行う場合に入力してください。入力内容は画面上では伏字表示されます。",
+)
+claude_model = st.sidebar.text_input(
+    "Claudeモデル",
+    value="claude-sonnet-4-5",
+    help="必要に応じて利用可能なClaudeモデルIDへ変更してください。",
+)
+
 
 categories = sorted(df["カテゴリ"].unique().tolist())
 opponents = sorted(df["対戦相手"].unique().tolist())
@@ -557,6 +733,54 @@ with tab_pitcher:
                     fig = make_heatmap(g, pitcher, "被打率")
                     st.pyplot(fig, use_container_width=True)
                     plt.close(fig)
+
+# 選択中の選手をまとめて分析
+st.markdown("---")
+st.subheader("選手別分析")
+if anthropic_api_key:
+    st.caption(f"Claude APIを使用して分析します（モデル: {claude_model}）。")
+else:
+    st.caption("API Key未指定：無料のローカル分析を使用します。外部サービスにはデータを送信しません。")
+
+if st.button("分析を実行", type="primary", key="run_analysis"):
+    analysis_items = []
+    for batter in selected_batters:
+        g = filtered[filtered["打者名"] == batter]
+        if not g.empty:
+            analysis_items.append(build_player_analysis(batter, g, "batter"))
+    for pitcher in selected_pitchers:
+        g = filtered[filtered["投手名"] == pitcher]
+        if not g.empty:
+            analysis_items.append(build_player_analysis(pitcher, g, "pitcher"))
+
+    if not analysis_items:
+        st.warning("分析対象として表示選手を1人以上選択してください。")
+    else:
+        st.session_state["player_analysis_results"] = []
+        progress = st.progress(0)
+        for i, item in enumerate(analysis_items):
+            try:
+                if anthropic_api_key.strip():
+                    result = claude_analysis(item, anthropic_api_key.strip(), claude_model.strip())
+                    source = "Claude"
+                else:
+                    result = free_solver_analysis(item)
+                    source = "無料ローカル分析"
+            except Exception as e:
+                result = free_solver_analysis(item) + f"\n\n⚠️ Claude分析に失敗したため、無料ローカル分析へ切り替えました。\nエラー: {e}"
+                source = "無料ローカル分析（フォールバック）"
+            st.session_state["player_analysis_results"].append(
+                {"player": item["player"], "role": item["role"], "source": source, "text": result}
+            )
+            progress.progress((i + 1) / len(analysis_items))
+
+if st.session_state.get("player_analysis_results"):
+    for result in st.session_state["player_analysis_results"]:
+        role_label = "打者" if result["role"] == "batter" else "投手"
+        with st.container(border=True):
+            st.markdown(f"### {result['player']}（{role_label}）")
+            st.caption(f"分析方式: {result['source']}")
+            st.markdown(result["text"])
 
 with tab_data:
     st.subheader("分析対象データ")
