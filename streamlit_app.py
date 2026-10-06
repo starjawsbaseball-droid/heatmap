@@ -829,7 +829,7 @@ elif ai_provider == "OpenAI":
 else:
     st.caption("無料のローカル分析：外部サービスにはデータを送信しません。")
 
-if st.button("分析を実行", type="primary", key="run_analysis"):
+if st.button("AI分析を実行", type="primary", key="run_analysis"):
     analysis_items = []
     for batter in selected_batters:
         g = filtered[filtered["打者名"] == batter]
