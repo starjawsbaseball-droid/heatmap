@@ -3,3 +3,7 @@ pandas
 numpy
 matplotlib
 pillow
+japanize-matplotlib
+anthropic
+openai
+google-genai
