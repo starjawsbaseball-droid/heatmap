@@ -661,9 +661,10 @@ filtered = filtered[
     & (filtered["日付_dt"].dt.date <= end_date)
 ]
 
-st.sidebar.markdown("---")
+
 st.sidebar.write(f"全データ: **{len(df):,}件**")
 st.sidebar.write(f"分析対象: **{len(filtered):,}件**")
+st.sidebar.markdown("---")
 
 # AI API設定
 st.sidebar.markdown("### AI分析")
