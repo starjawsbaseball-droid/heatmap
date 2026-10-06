@@ -609,31 +609,7 @@ except Exception as e:
 # サイドバー
 st.sidebar.header("分析条件")
 
-# AI API設定
-st.sidebar.markdown("### AI分析")
-ai_provider = st.sidebar.selectbox(
-    "分析エンジン",
-    ["自動", "Claude", "Gemini", "OpenAI", "無料ローカル分析"],
-    help="自動では、入力済みAPI Keyを Claude → Gemini → OpenAI の順に使用します。どれも未指定なら無料ローカル分析です。",
-)
-anthropic_api_key = st.sidebar.text_input(
-    "Anthropic Claude API Key",
-    type="password",
-    help="Claude API用。画面上では伏字表示されます。",
-)
-claude_model = st.sidebar.text_input("Claudeモデル", value="claude-sonnet-4-5")
-gemini_api_key = st.sidebar.text_input(
-    "Google Gemini API Key",
-    type="password",
-    help="Gemini API用。画面上では伏字表示されます。",
-)
-gemini_model = st.sidebar.text_input("Geminiモデル", value="gemini-3.8-flash")
-openai_api_key = st.sidebar.text_input(
-    "OpenAI API Key",
-    type="password",
-    help="OpenAI API用。画面上では伏字表示されます。",
-)
-openai_model = st.sidebar.text_input("OpenAIモデル", value="gpt-5")
+
 
 
 categories = sorted(df["カテゴリ"].unique().tolist())
@@ -688,6 +664,37 @@ filtered = filtered[
 st.sidebar.markdown("---")
 st.sidebar.write(f"全データ: **{len(df):,}件**")
 st.sidebar.write(f"分析対象: **{len(filtered):,}件**")
+
+# AI API設定
+st.sidebar.markdown("### AI分析")
+ai_provider = st.sidebar.selectbox(
+    "分析エンジン",
+    ["自動", "Claude", "Gemini", "OpenAI", "無料ローカル分析"],
+    help="自動では、入力済みAPI Keyを Claude → Gemini → OpenAI の順に使用します。どれも未指定なら無料ローカル分析です。",
+)
+anthropic_api_key = st.sidebar.text_input(
+    "Anthropic Claude API Key",
+    type="password",
+    help="Claude API用。画面上では伏字表示されます。",
+)
+claude_model = st.sidebar.text_input("Claudeモデル", value="claude-sonnet-4-5")
+gemini_api_key = st.sidebar.text_input(
+    "Google Gemini API Key",
+    type="password",
+    help="Gemini API用。画面上では伏字表示されます。",
+)
+gemini_model = st.sidebar.text_input("Geminiモデル", value="gemini-3.8-flash")
+openai_api_key = st.sidebar.text_input(
+    "OpenAI API Key",
+    type="password",
+    help="OpenAI API用。画面上では伏字表示されます。",
+)
+openai_model = st.sidebar.text_input("OpenAIモデル", value="gpt-5")
+
+
+
+
+
 
 if filtered.empty:
     st.warning("指定した条件に該当するデータがありません。")
