@@ -7,3 +7,4 @@ japanize-matplotlib
 anthropic
 openai
 google-genai
+reportlab
