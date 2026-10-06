@@ -14,6 +14,15 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak, Table, TableStyle
+
 try:
     import anthropic
 except ImportError:
@@ -589,6 +598,98 @@ K: {player_data['strikeouts']}
     return "\n".join(parts).strip()
 
 
+def make_report_pdf(filtered, selected_categories, selected_opponents, start_date, end_date,
+                    sj_batter, sj_pitcher, selected_batters, selected_pitchers, analysis_results):
+    """現在の画面条件・成績・ヒートマップ・AI分析を1つのPDFレポートにまとめる。"""
+    pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        rightMargin=14*mm, leftMargin=14*mm,
+        topMargin=14*mm, bottomMargin=14*mm,
+        title="野球ゾーン別 打率・被打率分析レポート",
+        author="Streamlit Baseball Heatmap"
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "JPTitle", parent=styles["Title"], fontName="HeiseiKakuGo-W5",
+        fontSize=20, leading=26, alignment=TA_CENTER, spaceAfter=10*mm
+    )
+    h1 = ParagraphStyle("JPH1", parent=styles["Heading1"], fontName="HeiseiKakuGo-W5", fontSize=14, leading=19, spaceBefore=5*mm, spaceAfter=3*mm)
+    h2 = ParagraphStyle("JPH2", parent=styles["Heading2"], fontName="HeiseiKakuGo-W5", fontSize=11, leading=15, spaceBefore=3*mm, spaceAfter=2*mm)
+    body = ParagraphStyle("JPBody", parent=styles["BodyText"], fontName="HeiseiKakuGo-W5", fontSize=9, leading=14, spaceAfter=2*mm)
+    small = ParagraphStyle("JPSmall", parent=body, fontSize=8, leading=12)
+
+    def esc(v):
+        return str(v).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    story = [Paragraph("野球ゾーン別 打率・被打率分析レポート", title_style)]
+    story.append(Paragraph("分析条件", h1))
+    story.append(Paragraph(
+        f"カテゴリ：{esc('、'.join(selected_categories))}<br/>"
+        f"対戦相手：{esc('、'.join(selected_opponents))}<br/>"
+        f"期間：{esc(start_date)} ～ {esc(end_date)}<br/>"
+        f"分析対象：{len(filtered):,}件", body
+    ))
+
+    ba, bab, bh, bk = stats(sj_batter)
+    pa, pab, ph, pk = stats(sj_pitcher)
+    data = [
+        ["区分", "分析件数", "AB", "安打", "K", "全体成績"],
+        ["SJ打者", f"{len(sj_batter):,}", f"{bab:,}", f"{bh:,}", f"{bk:,}", "-" if np.isnan(ba) else f"{ba:.3f}"],
+        ["SJ投手", f"{len(sj_pitcher):,}", f"{pab:,}", f"{ph:,}", f"{pk:,}", "-" if np.isnan(pa) else f"{pa:.3f}"],
+    ]
+    t = Table(data, colWidths=[30*mm, 25*mm, 20*mm, 20*mm, 20*mm, 30*mm])
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0,0), (-1,-1), "HeiseiKakuGo-W5"),
+        ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("ALIGN", (1,0), (-1,-1), "CENTER"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    story += [Paragraph("SJメンバー全体情報", h1), t]
+
+    # 選手別ヒートマップ
+    for role, names, metric in [
+        ("batter", selected_batters, "打率"),
+        ("pitcher", selected_pitchers, "被打率"),
+    ]:
+        if not names:
+            continue
+        story.append(PageBreak())
+        story.append(Paragraph("打者別 打率" if role == "batter" else "投手別 被打率", h1))
+        for name in names:
+            g = filtered[filtered["打者名"] == name] if role == "batter" else filtered[filtered["投手名"] == name]
+            if g.empty:
+                continue
+            avg, ab, h, k = stats(g)
+            story.append(Paragraph(f"{esc(name)}　{metric}：{'-' if np.isnan(avg) else f'{avg:.3f}'}　AB={ab}　{'安打' if role == 'batter' else '被安打'}={h}　K={k}", h2))
+            fig = make_heatmap(g, name, metric)
+            img_buf = io.BytesIO()
+            fig.savefig(img_buf, format="png", dpi=150, bbox_inches="tight")
+            plt.close(fig)
+            img_buf.seek(0)
+            story.append(Image(img_buf, width=125*mm, height=125*mm))
+            story.append(Spacer(1, 2*mm))
+
+    if analysis_results:
+        story.append(PageBreak())
+        story.append(Paragraph("選手別AI分析", h1))
+        for result in analysis_results:
+            role_label = "打者" if result["role"] == "batter" else "投手"
+            story.append(Paragraph(f"{esc(result['player'])}（{role_label}）　分析方式：{esc(result['source'])}", h2))
+            # Markdown記号をPDF向けに軽く除去
+            txt = str(result["text"]).replace("**", "").replace("\n", "<br/>")
+            story.append(Paragraph(esc(txt).replace("&lt;br/&gt;", "<br/>"), body))
+
+    story.append(Spacer(1, 4*mm))
+    story.append(Paragraph("注記：AB=0（B・DB・SF・SAC）のゾーンはデータなしとして白表示。BHは安打、BOはAB、BKはABかつ三振として計算。", small))
+    doc.build(story)
+    return buf.getvalue()
+
+
 # ============================================================
 # Streamlit UI
 # ============================================================
@@ -887,6 +988,36 @@ if st.session_state.get("player_analysis_results"):
             st.markdown(f"### {result['player']}（{role_label}）")
             st.caption(f"分析方式: {result['source']}")
             st.markdown(result["text"])
+
+
+# PDFレポート出力
+st.markdown("---")
+st.subheader("レポート出力")
+st.caption("現在の分析条件、SJ全体成績、選択中の選手のヒートマップ、実行済みAI分析をPDFにまとめます。")
+if st.button("📄 PDFレポートを作成", type="primary", key="create_report"):
+    with st.spinner("PDFレポートを作成しています…"):
+        pdf_bytes = make_report_pdf(
+            filtered=filtered,
+            selected_categories=selected_categories,
+            selected_opponents=selected_opponents,
+            start_date=start_date,
+            end_date=end_date,
+            sj_batter=sj_batter,
+            sj_pitcher=sj_pitcher,
+            selected_batters=selected_batters,
+            selected_pitchers=selected_pitchers,
+            analysis_results=st.session_state.get("player_analysis_results", []),
+        )
+        st.session_state["report_pdf"] = pdf_bytes
+
+if st.session_state.get("report_pdf"):
+    st.download_button(
+        "📥 PDFレポートをダウンロード",
+        data=st.session_state["report_pdf"],
+        file_name=f"野球分析レポート_{start_date}_{end_date}.pdf",
+        mime="application/pdf",
+        key="download_report_pdf",
+    )
 
 with tab_data:
     st.subheader("分析対象データ")
