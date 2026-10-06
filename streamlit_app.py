@@ -2,7 +2,7 @@
 """Streamlit版 野球ゾーン別 打率・被打率ヒートマップ
 
 CSVはアプリ内に埋め込まれているため、ファイルアップロードは不要です。
-元の完成版 zone_heatmap_generator.py の集計ロジックをStreamlit向けに移植しています。
+元の完成版 zone_heatmap_generator(1).py の集計ロジックをStreamlit向けに移植しています。
 """
 
 import io
@@ -18,6 +18,14 @@ try:
     import anthropic
 except ImportError:
     anthropic = None
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+try:
+    from google import genai
+except ImportError:
+    genai = None
 from matplotlib import font_manager
 
 # Streamlit Cloud（Linux）でもヒートマップ画像内の日本語を確実に描画するため、
@@ -50,7 +58,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 # ============================================================
 # 埋め込みCSVデータ（ヒートマップ.csv）
-# ============================================================# -*- coding: utf-8 -*-
+# ============================================================
 """Streamlit版 野球ゾーン別 打率・被打率ヒートマップ
 
 CSVはアプリ内に埋め込まれているため、ファイルアップロードは不要です。
@@ -499,6 +507,51 @@ def free_solver_analysis(player_data):
     )
 
 
+def build_ai_prompt(player_data):
+    role_text = "打者" if player_data["role"] == "batter" else "投手"
+    metric_text = "打率" if player_data["role"] == "batter" else "被打率"
+    return f"""あなたは野球データ分析担当です。以下の{role_text}について、与えられた実績データだけを根拠に簡潔に分析してください。
+推測で存在しないデータを補わないでください。特にサンプル数（AB）が少ないゾーンは「サンプル数が少ない」と明記してください。
+
+選手: {player_data['player']}
+全体{metric_text}: {player_data['rate']}
+AB: {player_data['ab']}
+安打: {player_data['hits']}
+K: {player_data['strikeouts']}
+
+ゾーン別データ:
+{chr(10).join(player_data['zones'])}
+
+以下の順番で、日本語で300～500文字程度でまとめてください。
+1. 全体評価
+2. 得意/苦手または抑えられている/打たれているゾーン
+3. 三振傾向
+4. 次回確認すべきポイント
+"""
+
+
+def openai_analysis(player_data, api_key, model):
+    if OpenAI is None:
+        raise RuntimeError("openaiパッケージがインストールされていません。")
+    client = OpenAI(api_key=api_key)
+    response = client.responses.create(model=model, input=build_ai_prompt(player_data))
+    text = getattr(response, "output_text", None)
+    if not text:
+        raise RuntimeError("OpenAIから分析結果を取得できませんでした。")
+    return text.strip()
+
+
+def gemini_analysis(player_data, api_key, model):
+    if genai is None:
+        raise RuntimeError("google-genaiパッケージがインストールされていません。")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model=model, contents=build_ai_prompt(player_data))
+    text = getattr(response, "text", None)
+    if not text:
+        raise RuntimeError("Geminiから分析結果を取得できませんでした。")
+    return text.strip()
+
+
 def claude_analysis(player_data, api_key, model):
     if anthropic is None:
         raise RuntimeError("anthropicパッケージがインストールされていません。")
@@ -556,18 +609,31 @@ except Exception as e:
 # サイドバー
 st.sidebar.header("分析条件")
 
-# Claude API設定
+# AI API設定
 st.sidebar.markdown("### AI分析")
+ai_provider = st.sidebar.selectbox(
+    "分析エンジン",
+    ["自動", "Claude", "Gemini", "OpenAI", "無料ローカル分析"],
+    help="自動では、入力済みAPI Keyを Claude → Gemini → OpenAI の順に使用します。どれも未指定なら無料ローカル分析です。",
+)
 anthropic_api_key = st.sidebar.text_input(
     "Anthropic Claude API Key",
     type="password",
-    help="Claudeで選手別の文章分析を行う場合に入力してください。入力内容は画面上では伏字表示されます。",
+    help="Claude API用。画面上では伏字表示されます。",
 )
-claude_model = st.sidebar.text_input(
-    "Claudeモデル",
-    value="claude-sonnet-4-5",
-    help="必要に応じて利用可能なClaudeモデルIDへ変更してください。",
+claude_model = st.sidebar.text_input("Claudeモデル", value="claude-sonnet-4-5")
+gemini_api_key = st.sidebar.text_input(
+    "Google Gemini API Key",
+    type="password",
+    help="Gemini API用。画面上では伏字表示されます。",
 )
+gemini_model = st.sidebar.text_input("Geminiモデル", value="gemini-3.8-flash")
+openai_api_key = st.sidebar.text_input(
+    "OpenAI API Key",
+    type="password",
+    help="OpenAI API用。画面上では伏字表示されます。",
+)
+openai_model = st.sidebar.text_input("OpenAIモデル", value="gpt-5")
 
 
 categories = sorted(df["カテゴリ"].unique().tolist())
@@ -737,10 +803,23 @@ with tab_pitcher:
 # 選択中の選手をまとめて分析
 st.markdown("---")
 st.subheader("選手別分析")
-if anthropic_api_key:
-    st.caption(f"Claude APIを使用して分析します（モデル: {claude_model}）。")
+if ai_provider == "自動":
+    if anthropic_api_key.strip():
+        st.caption(f"自動選択: Claude（{claude_model}）")
+    elif gemini_api_key.strip():
+        st.caption(f"自動選択: Gemini（{gemini_model}）")
+    elif openai_api_key.strip():
+        st.caption(f"自動選択: OpenAI（{openai_model}）")
+    else:
+        st.caption("API Key未指定：無料のローカル分析を使用します。外部サービスにはデータを送信しません。")
+elif ai_provider == "Claude":
+    st.caption(f"Claude（{claude_model}）")
+elif ai_provider == "Gemini":
+    st.caption(f"Gemini（{gemini_model}）")
+elif ai_provider == "OpenAI":
+    st.caption(f"OpenAI（{openai_model}）")
 else:
-    st.caption("API Key未指定：無料のローカル分析を使用します。外部サービスにはデータを送信しません。")
+    st.caption("無料のローカル分析：外部サービスにはデータを送信しません。")
 
 if st.button("分析を実行", type="primary", key="run_analysis"):
     analysis_items = []
@@ -760,14 +839,33 @@ if st.button("分析を実行", type="primary", key="run_analysis"):
         progress = st.progress(0)
         for i, item in enumerate(analysis_items):
             try:
-                if anthropic_api_key.strip():
+                provider = ai_provider
+                if provider == "自動":
+                    if anthropic_api_key.strip():
+                        provider = "Claude"
+                    elif gemini_api_key.strip():
+                        provider = "Gemini"
+                    elif openai_api_key.strip():
+                        provider = "OpenAI"
+                    else:
+                        provider = "無料ローカル分析"
+
+                if provider == "Claude" and anthropic_api_key.strip():
                     result = claude_analysis(item, anthropic_api_key.strip(), claude_model.strip())
                     source = "Claude"
+                elif provider == "Gemini" and gemini_api_key.strip():
+                    result = gemini_analysis(item, gemini_api_key.strip(), gemini_model.strip())
+                    source = "Gemini"
+                elif provider == "OpenAI" and openai_api_key.strip():
+                    result = openai_analysis(item, openai_api_key.strip(), openai_model.strip())
+                    source = "OpenAI"
                 else:
+                    if provider != "無料ローカル分析":
+                        raise RuntimeError(f"{provider}のAPI Keyが指定されていません。")
                     result = free_solver_analysis(item)
                     source = "無料ローカル分析"
             except Exception as e:
-                result = free_solver_analysis(item) + f"\n\n⚠️ Claude分析に失敗したため、無料ローカル分析へ切り替えました。\nエラー: {e}"
+                result = free_solver_analysis(item) + f"\n\n⚠️ {provider}分析に失敗したため、無料ローカル分析へ切り替えました。\nエラー: {e}"
                 source = "無料ローカル分析（フォールバック）"
             st.session_state["player_analysis_results"].append(
                 {"player": item["player"], "role": item["role"], "source": source, "text": result}
@@ -809,3 +907,4 @@ st.caption(
     "AB=0（B・DB・SF・SAC）のゾーンはデータなしとして白表示。"
     " BHは安打、BOはAB、BKはABかつ三振として計算。"
 )
+
