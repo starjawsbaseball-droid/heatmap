@@ -67,9 +67,7 @@ plt.rcParams["axes.unicode_minus"] = False
 # 埋め込みCSVデータ（ヒートマップ.csv）
 # ============================================================
 """Streamlit版 野球ゾーン別 打率・被打率ヒートマップ
-
 CSVはアプリ内に埋め込まれているため、ファイルアップロードは不要です。
-元の完成版 zone_heatmap_generator(1).py の集計ロジックをStreamlit向けに移植しています。
 """
 
 import io
