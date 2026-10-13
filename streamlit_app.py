@@ -548,9 +548,9 @@ def make_heatmap(g, title, rate_label):
 
     overall, total_ab, total_h, total_k = stats(g)
     overall_txt = (
-        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}"
+        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　B={total_b}"
         if not np.isnan(overall)
-        else f"{rate_label}：-　AB={total_ab}　K={total_k}"
+        else f"{rate_label}：-　AB={total_ab}　K={total_k}　B={total_b}"
     )
 
     ax.set_title(f"{title}\n{overall_txt}", fontsize=15, pad=14)
