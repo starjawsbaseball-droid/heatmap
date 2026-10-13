@@ -376,7 +376,7 @@ DPI = 180
 AB_RESULTS = {"0", "1", "2", "3", "4", "K", "E", "BO", "BH", "BK"}
 K_RESULTS = {"K", "BK"}
 HIT_RESULTS = {"1", "2", "3", "4", "BH"}
-VALID_RESULTS = AB_RESULTS | {"B", "DB", "SF", "SAC"}
+VALID_RESULTS = AB_RESULTS | {"B", "DB", "SF", "SAC","IF"}
 
 
 # ============================================================
