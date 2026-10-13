@@ -513,9 +513,9 @@ def make_heatmap(g, title, rate_label):
     overall, total_ab, total_h, total_k = stats(g)
     bb, hbp = plate_discipline_stats(g)
     overall_txt = (
-        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　四球={bb}　デッドボール={hbp}"
+        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　四球={bb}　DB={hbp}"
         if not np.isnan(overall)
-        else f"{rate_label}：-　AB={total_ab}　K={total_k}　四球={bb}　デッドボール={hbp}"
+        else f"{rate_label}：-　AB={total_ab}　K={total_k}　四球={bb}　DB={hbp}"
     )
 
     ax.set_title(f"{title}\n{overall_txt}", fontsize=15, pad=14)
@@ -1070,7 +1070,7 @@ with tab_batter:
                     avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
                     st.markdown(
                         f"**{batter}**  \n"
-                        f"打率 **{avg_text}**　AB={ab}　安打={h}　K={k}　四球={bb}　デッドボール={hbp}"
+                        f"打率 **{avg_text}**　AB={ab}　安打={h}　K={k}　四球={bb}　DB={hbp}"
                     )
                     fig = make_heatmap(g, batter, "打率")
                     st.pyplot(fig, use_container_width=True)
@@ -1107,7 +1107,7 @@ with tab_pitcher:
                     avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
                     st.markdown(
                         f"**{pitcher}**  \n"
-                        f"被打率 **{avg_text}**　AB={ab}　被安打={h}　K={k}　四球={bb}　デッドボール={hbp}"
+                        f"被打率 **{avg_text}**　AB={ab}　被安打={h}　K={k}　四球={bb}　DB={hbp}"
                     )
                     fig = make_heatmap(g, pitcher, "被打率")
                     st.pyplot(fig, use_container_width=True)
