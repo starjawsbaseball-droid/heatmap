@@ -475,7 +475,7 @@ def make_heatmap(g, title, rate_label):
     k = np.zeros((5, 5), dtype=int)
 
     z = (
-        g.groupby(["y_zone", "x_zone"], observed=True)[["AB", "H", "K"]]
+        g.groupby(["y_zone", "x_zone"], observed=True)[["AB", "H", "K","B","DB"]]
         .sum()
         .reset_index()
     )
@@ -546,11 +546,11 @@ def make_heatmap(g, title, rate_label):
                 ha="center", va="center", fontsize=10
             )
 
-    overall, total_ab, total_h, total_k = stats(g)
+    overall, total_ab, total_h, total_k, total_b, total_db = stats(g)
     overall_txt = (
-        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　B={total_b}"
+        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　B={total_b}　DB={total_db}"
         if not np.isnan(overall)
-        else f"{rate_label}：-　AB={total_ab}　K={total_k}　B={total_b}"
+        else f"{rate_label}：-　AB={total_ab}　K={total_k}　B={total_b}　DB={total_db}"
     )
 
     ax.set_title(f"{title}\n{overall_txt}", fontsize=15, pad=14)
