@@ -317,50 +317,6 @@ SJ島居,NS桑代, -0.5,-1 ,0,Nリーグ,2026/10/12,セネタース
 NS松崎,SJ井川,0 ,-1 ,0,Nリーグ,2026/10/12,セネタース
 NS松崎,SJ高野, -1, 0,0,Nリーグ,2026/10/12,セネタース
 NS松崎,SJ有馬,0 ,0.5 ,0,Nリーグ,2026/10/12,セネタース
-SJ北見,WJ秋山,-0.5 ,0 ,4,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ小林,0.5 , 0,3,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ平良,-0.5 ,-0.5 ,K,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ阿部,-0.5 ,-0.5 ,K,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ末永, 0, -0.5,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ早津,0 , -0.5,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ小川,-1 , -0.5,B,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ野田,0 ,1 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ齋藤, 0, 2,K,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ深沢,-0.5 ,-0.5 ,1,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ島居,1 , 1,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ根本, 0,-0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ渋谷,-0.5 , 0,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ長谷川,0 ,-0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ門司,-0.5 ,-0.5 ,K,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ北見,0 , -0.5,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ井川,-0.5 ,-0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ秋山, -0.5,-0.5 ,3,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ小林,0.5 , 0,K,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ平良,-0.5 ,-0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ阿部,0.5 , 0,1,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ末永, -0.5,-0.5 ,K,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ有馬, 0.5,-0.5 ,K,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ小川,0.5 , -1,B,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ野田, -0.5,0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ末永,SJ齋藤, 0,-0.5 ,1,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ早津, 0.5,0 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ根本, -0.5,0 ,1,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ渋谷, 0.5, 0,4,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ長谷川,-0.5 , 0,1,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ秋山,-0.5 ,-0.5 ,1,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ北見,WJ小林,0 , 0,1,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ深沢, -0.5,0 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ島居, 0.5, -1,B,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ門司,1 ,1 ,IF,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ北見,0 , 0,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ井川, 1, -0.5,K,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ齋藤,WJ平良,0.5 , 0,K,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ齋藤,WJ阿部,0 ,0 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-SJ齋藤,WJ末永, 0.5,0.5 , 0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ有馬, 1,0.5 ,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ小川,-0.5 , -0.5,0,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ野田, 0,0.5 ,1,城北大会,2026/10/12,西伊興若潮ジュニア
-WJ阿部,SJ齋藤, 0, 0,K,城北大会,2026/10/12,西伊興若潮ジュニア
 '''
 
 # ============================================================
@@ -376,7 +332,7 @@ DPI = 180
 AB_RESULTS = {"0", "1", "2", "3", "4", "K", "E", "BO", "BH", "BK"}
 K_RESULTS = {"K", "BK"}
 HIT_RESULTS = {"1", "2", "3", "4", "BH"}
-VALID_RESULTS = AB_RESULTS | {"B", "DB", "SF", "SAC","IF"}
+VALID_RESULTS = AB_RESULTS | {"B", "DB", "SF", "SAC"}
 
 
 # ============================================================
@@ -466,6 +422,14 @@ def stats(df):
     return (h / ab if ab else np.nan), ab, h, k
 
 
+def plate_discipline_stats(df):
+    """四球（B）とデッドボール（DB）の件数を返す。"""
+    results = df["結果"].map(normalize_result)
+    bb = int((results == "B").sum())
+    hbp = int((results == "DB").sum())
+    return bb, hbp
+
+
 # ============================================================
 # ヒートマップ
 # ============================================================
@@ -475,7 +439,7 @@ def make_heatmap(g, title, rate_label):
     k = np.zeros((5, 5), dtype=int)
 
     z = (
-        g.groupby(["y_zone", "x_zone"], observed=True)[["AB", "H", "K","B","DB"]]
+        g.groupby(["y_zone", "x_zone"], observed=True)[["AB", "H", "K"]]
         .sum()
         .reset_index()
     )
@@ -546,11 +510,12 @@ def make_heatmap(g, title, rate_label):
                 ha="center", va="center", fontsize=10
             )
 
-    overall, total_ab, total_h, total_k, total_b, total_db = stats(g)
+    overall, total_ab, total_h, total_k = stats(g)
+    bb, hbp = plate_discipline_stats(g)
     overall_txt = (
-        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　B={total_b}　DB={total_db}"
+        f"{rate_label}：{overall:.3f}　AB={total_ab}　K={total_k}　四球={bb}　デッドボール={hbp}"
         if not np.isnan(overall)
-        else f"{rate_label}：-　AB={total_ab}　K={total_k}　B={total_b}　DB={total_db}"
+        else f"{rate_label}：-　AB={total_ab}　K={total_k}　四球={bb}　デッドボール={hbp}"
     )
 
     ax.set_title(f"{title}\n{overall_txt}", fontsize=15, pad=14)
@@ -847,6 +812,7 @@ def make_report_pdf(filtered, selected_categories, selected_opponents, start_dat
         for name, g in valid_names:
             player_index += 1
             avg, ab, h, k = stats(g)
+            bb, hbp = plate_discipline_stats(g)
             avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
 
             fig = make_heatmap(g, name, metric)
@@ -862,7 +828,7 @@ def make_report_pdf(filtered, selected_categories, selected_opponents, start_dat
                     fontSize=9.5, leading=12, alignment=TA_CENTER, spaceAfter=1.5*mm
                 )),
                 Paragraph(
-                    f"{metric} <b>{avg_text}</b>　AB {ab:,}　{hit_label} {h:,}　K {k:,}",
+                    f"{metric} <b>{avg_text}</b>　AB {ab:,}　{hit_label} {h:,}　K {k:,}　四球 {bb:,}　死球 {hbp:,}",
                     ParagraphStyle(
                         f"CardStats{player_index}", parent=small, fontName="HeiseiKakuGo-W5",
                         fontSize=6.8, leading=9, alignment=TA_CENTER, spaceAfter=1.5*mm
@@ -1100,9 +1066,11 @@ with tab_batter:
                 with col:
                     g = filtered[filtered["打者名"] == batter]
                     avg, ab, h, k = stats(g)
+                    bb, hbp = plate_discipline_stats(g)
+                    avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
                     st.markdown(
                         f"**{batter}**  \n"
-                        f"打率 **{avg:.3f}**　AB={ab}　安打={h}　K={k}"
+                        f"打率 **{avg_text}**　AB={ab}　安打={h}　K={k}　四球={bb}　デッドボール={hbp}"
                     )
                     fig = make_heatmap(g, batter, "打率")
                     st.pyplot(fig, use_container_width=True)
@@ -1135,9 +1103,11 @@ with tab_pitcher:
                 with col:
                     g = filtered[filtered["投手名"] == pitcher]
                     avg, ab, h, k = stats(g)
+                    bb, hbp = plate_discipline_stats(g)
+                    avg_text = "-" if np.isnan(avg) else f"{avg:.3f}"
                     st.markdown(
                         f"**{pitcher}**  \n"
-                        f"被打率 **{avg:.3f}**　AB={ab}　被安打={h}　K={k}"
+                        f"被打率 **{avg_text}**　AB={ab}　被安打={h}　K={k}　四球={bb}　デッドボール={hbp}"
                     )
                     fig = make_heatmap(g, pitcher, "被打率")
                     st.pyplot(fig, use_container_width=True)
@@ -1280,4 +1250,3 @@ st.caption(
     "AB=0（B・DB・SF・SAC）のゾーンはデータなしとして白表示。"
     " BHは安打、BOはAB、BKはABかつ三振として計算。"
 )
-
